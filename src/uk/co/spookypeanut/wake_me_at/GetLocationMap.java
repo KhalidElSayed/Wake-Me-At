@@ -138,8 +138,10 @@ implements LocationListener {
         mRadius = extras.getDouble("radiusMetres");
         if (mOrigLat == 1000 && mOrigLong == 1000) {
             Location currLoc = getCurrentLocation();
-            mOrigLat = currLoc.getLatitude();
-            mOrigLong = currLoc.getLongitude();
+            if (currLoc != null) {
+                mOrigLat = currLoc.getLatitude();
+                mOrigLong = currLoc.getLongitude();
+            }
         }
         mSearchTerm = extras.getString("nick");
 
@@ -295,6 +297,24 @@ implements LocationListener {
         }
     }
 
+    
+    /**
+     * getCurrentLocation should never return null. Let's pop up a long
+     * toast, explaining what has happened, and then return a location in
+     * the middle of the Atlantic
+     * @return A generic Location 
+     */
+    private Location cantGetLocation() {
+        // The weird thing is that this is what my device (Nexus One) does this
+        // anyway by default, but I've had report of a force close
+        Toast.makeText(mContext, R.string.cant_get_location_msg,
+                       Toast.LENGTH_LONG);
+        Location fakeLocation = new Location("");
+        fakeLocation.setLatitude(0.0);
+        fakeLocation.setLongitude(0.0);
+        return fakeLocation;
+    }
+    
     /**
      * Get the current location via GPS
      * @return Current location
@@ -308,21 +328,18 @@ implements LocationListener {
         String provider = locMan.getBestProvider(new Criteria(), true);
         if (provider == null) {
             Log.wtf(LOG_NAME, "Provider is null");
-            // TODO: do this properly
-            return currentLocation;
+            return cantGetLocation();
         }
         if(!locMan.isProviderEnabled(provider)){
             Log.wtf(LOG_NAME, "Provider is disabled");
-            // TODO: do this properly
-            return currentLocation;
+            return cantGetLocation();
         }
         currentLocation = locMan.getLastKnownLocation(provider);
         locMan.removeUpdates(this);
 
         if(currentLocation == null){
             Log.wtf(LOG_NAME, "Return value from getLastKnownLocation is null");
-            // TODO: do this properly
-            return currentLocation;
+            return cantGetLocation();
         }
         return currentLocation;
     }
